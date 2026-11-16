@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Title placeholder</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="draft-banner">TEST DO NOT SHARE</div>
+<div id="container">
+  <div id="title">
+    <h1>Title placeholder</h1>
+  </div>
+  <div class="panel">
+    <div class="filters">
+      <span class="filters-label" id="sector-label">SECTOR</span>
+      <div class="filter-buttons" id="sector-filters" role="group" aria-labelledby="sector-label"></div>
+    </div>
+    <div class="filters">
+      <span class="filters-label" id="transparency-label">TRANSPARENCY</span>
+      <div class="filter-buttons" id="transparency-filters" role="group" aria-labelledby="transparency-label"></div>
+    </div>
+    <div class="filters">
+      <span class="filters-label" id="party-label">PARTY</span>
+      <div class="filter-buttons" id="party-filters" role="group" aria-labelledby="party-label"></div>
+    </div>
+    <div class="filters">
+      <span class="filters-label" id="contracts-label">GOVERNMENT CONTRACTS (NOT REAL DATA PLACEHOLDER)</span>
+      <div class="filter-buttons" id="contracts-filters" role="group" aria-labelledby="contracts-label"></div>
+    </div>
+    <div class="toolbar">
+      <span class="count" id="count" aria-live="polite"></span>
+      <input type="search" id="search" placeholder="Search" aria-label="Search">
+    </div>
+    <div id="table-wrap"></div>
+    <p class="footnote">Source placeholder</p>
+  </div>
+</div>
+
+<script>
+const CSV_FILE = "Top 100 page draft.csv";
+
+/* ---------- CSV parsing (handles quoted fields, commas and newlines in quotes) ---------- */
+function parseCSV(text) {
+  text = text.replace(/^﻿/, "");
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); rows.push(row); row = []; field = "";
+    } else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  const headers = rows.shift().map(h => h.trim());
+  return rows
+    .filter(r => r.some(v => v.trim() !== ""))
+    .map(r => Object.fromEntries(headers.map((h, i) => [h, (r[i] || "").trim()])));
+}
+
+/* ---------- Helpers ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = n => "$" + n.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+function highlight(text, q) {
+  const safe = esc(text);
+  if (!q) return safe;
+  const re = new RegExp("(" + esc(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+  return safe.replace(re, "<mark>$1</mark>");
+}
+
+const partyClass = v => /repub/i.test(v) ? "republican" : /democ/i.test(v) ? "democratic" : "both";
+
+/* ---------- State ---------- */
+let DATA = [], COLUMNS = [], MAX_AMOUNT = 0;
+let sortKey = null, sortDir = 1, query = "";
+const openRows = new Set();
+
+/* Every CSV column is shown under its exact CSV header, except:
+   - the "Sector tag N" columns, merged into one column headed "Sector";
+   - "Description", whose text (with its header) appears in the row that opens under each donor. */
+const SECTOR_LABEL = "Sector";
+const CHECK_PLACEHOLDER = true;
+const hasContract = r => CHECK_PLACEHOLDER ? r.__placeholderContract : (r["Government Contracts"] || "") !== "";
+
+/* PLACEHOLDER: randomly mark half the rows Yes and half No (re-drawn on every page load) */
+function assignPlaceholderContracts(rows) {
+  const order = rows.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const yes = new Set(order.slice(0, Math.ceil(rows.length / 2)));
+  rows.forEach((r, i) => { r.__placeholderContract = yes.has(i); });
+}
+function buildColumns(headers, rows) {
+  const sectorCols = headers.filter(h => /^sector tag/i.test(h));
+  rows.forEach(r => { r.__sectors = sectorCols.map(h => r[h]).filter(Boolean); });
+  const cols = [];
+  headers.forEach(h => {
+    if (h === "Description") return;
+    if (h === "Party Supported") return; /* not a column: shown through the amount color and the PARTY filter */
+    if (sectorCols.includes(h)) {
+      if (h === sectorCols[0]) cols.push({ key: "__sectors", label: SECTOR_LABEL, type: "tags" });
+      return;
+    }
+    cols.push({ key: h, label: h, type: h === "Contributions" ? "money" : h === "Party Supported" ? "party" : h === "Government Contracts" ? "check" : "text" });
+  });
+  return cols;
+}
+
+function cellValue(r, col) {
+  if (col.type === "money") return parseFloat(r[col.key].replace(/[$,]/g, "")) || 0;
+  if (col.type === "tags") return r.__sectors.join(", ");
+  return r[col.key];
+}
+
+function renderCell(r, col) {
+  const label = esc(col.label);
+  if (col.type === "money") {
+    /* Amount in the donor's party color, with a bar scaled to the largest amount in the CSV */
+    const n = cellValue(r, col), pct = MAX_AMOUNT ? (n / MAX_AMOUNT) * 100 : 0;
+    const cls = partyClass(r["Party Supported"] || "");
+    return `<td class="num amount ${cls}"><span class="party-name ${cls}">${money(n)}</span><span class="bar-track"><span class="bar" style="width:${pct.toFixed(2)}%"></span></span></td>`;
+  }
+  if (col.type === "tags") return `<td class="stack" data-label="${label}">${r.__sectors.map(t => `<span class="tag">${highlight(t, query)}</span>`).join("")}</td>`;
+  if (col.type === "party") {
+    const v = r[col.key], cls = partyClass(v);
+    return `<td class="stack party" data-label="${label}"><span class="party-name ${cls}">${highlight(v, query)}</span></td>`;
+  }
+  if (col.type === "check") {
+    /* PLACEHOLDER: the CSV column is empty, so rows are randomly marked yes/no for now.
+       Set CHECK_PLACEHOLDER to false to check only rows with a value in the CSV
+       (and remove " (NOT REAL DATA PLACEHOLDER)" from the GOVERNMENT CONTRACTS filter label). */
+    const checked = hasContract(r);
+    return `<td class="stack check-cell" data-label="${label}">${checked ? `<span class="check" role="img" aria-label="Yes"></span>` : `<span class="cross" role="img" aria-label="No"></span>`}</td>`;
+  }
+  const cls = col.key === "Donor" ? "donor" : "stack";
+  return `<td class="${cls}" data-label="${label}">${highlight(r[col.key], query)}</td>`;
+}
+
+function render() {
+  const q = query.toLowerCase();
+  let rows = DATA.filter(r =>
+    passesFilters(r) &&
+    (!q || Object.entries(r).some(([k, v]) => !k.startsWith("__") && String(v).toLowerCase().includes(q))));
+  if (sortKey) {
+    const col = COLUMNS.find(c => c.key === sortKey);
+    rows = rows.slice().sort((a, b) => {
+      const x = cellValue(a, col), y = cellValue(b, col);
+      return (typeof x === "number" ? x - y : x.localeCompare(y)) * sortDir;
+    });
+  }
+
+  const ncol = COLUMNS.length + 1;
+  const head = `<tr><th aria-label="Expand"></th>${COLUMNS.map(c =>
+    `<th${c.type === "money" ? ` data-key="${esc(c.key)}" class="num"` : ""}>${esc(c.label)}<span class="arrow">${sortKey === c.key ? (sortDir > 0 ? "▲" : "▼") : ""}</span></th>`
+  ).join("")}</tr>`;
+
+  const body = rows.length ? rows.map(r => {
+    const id = DATA.indexOf(r), open = openRows.has(id) || (q && r.Description.toLowerCase().includes(q));
+    return `<tr class="main${open ? " open" : ""}" data-id="${id}" aria-expanded="${open}">
+        <td class="toggle">${open ? "−" : "+"}</td>${COLUMNS.map(c => renderCell(r, c)).join("")}
+      </tr>
+      <tr class="desc"${open ? "" : " hidden"}><td colspan="${ncol}"><strong>Description</strong> ${highlight(r.Description, query)}</td></tr>`;
+  }).join("") : `<tr><td class="empty" colspan="${ncol}">No match</td></tr>`;
+
+  document.getElementById("count").textContent = `Showing ${rows.length} of ${DATA.length} records`;
+  document.getElementById("table-wrap").innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+/* Filter button rows. Each row has one button per distinct value, in the order the values
+   first appear in the CSV. Click a button to show only matching donors; click it again to
+   clear that row. Rows combine with each other and with the search box. */
+const FILTERS = [
+  { id: "sector-filters",       values: r => r.__sectors, alphabetical: true },
+  { id: "transparency-filters", values: r => [r["Transparency"]].filter(Boolean) },
+  { id: "party-filters",        values: r => [r["Party Supported"]].filter(Boolean), colored: true },
+  /* Fixed Yes/No buttons, so both show even while every row is checked */
+  { id: "contracts-filters",    values: r => [hasContract(r) ? "Yes" : "No"], options: ["Yes", "No"] },
+];
+const activeFilters = {};
+
+function passesFilters(r) {
+  return FILTERS.every(f => !activeFilters[f.id] || f.values(r).includes(activeFilters[f.id]));
+}
+
+function renderFilters() {
+  FILTERS.forEach(f => {
+    let vals = f.options || [...new Set(DATA.flatMap(f.values))];
+    if (f.alphabetical) vals = vals.slice().sort((a, b) => a.localeCompare(b));
+    const active = activeFilters[f.id];
+    document.getElementById(f.id).innerHTML = vals.map(v =>
+      `<button type="button" class="filter-btn${f.colored ? " party-name " + partyClass(v) : ""}${v === active ? " active" : ""}" aria-pressed="${v === active}" data-value="${esc(v)}">${esc(v)}</button>`
+    ).join("");
+  });
+}
+
+FILTERS.forEach(f => {
+  document.getElementById(f.id).addEventListener("click", e => {
+    const btn = e.target.closest("button[data-value]");
+    if (!btn) return;
+    activeFilters[f.id] = activeFilters[f.id] === btn.dataset.value ? null : btn.dataset.value;
+    renderFilters();
+    render();
+  });
+});
+
+/* ---------- Events ---------- */
+document.getElementById("table-wrap").addEventListener("click", e => {
+  const th = e.target.closest("th[data-key]");
+  if (th) {
+    const key = th.dataset.key;
+    if (sortKey === key) sortDir = -sortDir;
+    else { sortKey = key; sortDir = COLUMNS.find(c => c.key === key).type === "money" ? -1 : 1; }
+    return render();
+  }
+  const tr = e.target.closest("tr.main");
+  if (tr) {
+    const id = +tr.dataset.id;
+    /* Only one description open at a time: opening a row closes the others */
+    const wasOpen = openRows.has(id);
+    openRows.clear();
+    if (!wasOpen) openRows.add(id);
+    render();
+  }
+});
+document.getElementById("search").addEventListener("input", e => { query = e.target.value.trim(); render(); });
+
+/* ---------- Load ---------- */
+fetch(encodeURI(CSV_FILE), { cache: "no-cache" })
+  .then(res => { if (!res.ok) throw new Error(`Could not load ${CSV_FILE} (${res.status})`); return res.text(); })
+  .then(text => {
+    DATA = parseCSV(text);
+    if (CHECK_PLACEHOLDER) assignPlaceholderContracts(DATA);
+    COLUMNS = buildColumns(Object.keys(DATA[0] || {}).filter(k => !k.startsWith("__")), DATA); /* "__" fields are internal, not CSV columns */
+    const moneyCol = COLUMNS.find(c => c.type === "money");
+    MAX_AMOUNT = moneyCol ? Math.max(0, ...DATA.map(r => cellValue(r, moneyCol))) : 0;
+    if (moneyCol) { sortKey = moneyCol.key; sortDir = -1; } /* open sorted by amount, most to least */
+    /* Open the description of the first donor shown (the largest amount) */
+    const first = moneyCol
+      ? DATA.reduce((best, r) => cellValue(r, moneyCol) > cellValue(best, moneyCol) ? r : best, DATA[0])
+      : DATA[0];
+    if (first) openRows.add(DATA.indexOf(first));
+    renderFilters();
+    render();
+  })
+  .catch(err => {
+    document.getElementById("table-wrap").innerHTML = `<div class="status">${esc(err.message)}</div>`;
+  });
+</script>
+</body>
+</html>

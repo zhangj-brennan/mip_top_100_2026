@@ -1,0 +1,290 @@
+@font-face {
+  font-family: "Benton";
+  src: url("Benton Sans/Benton Sans Book.otf");
+}
+
+@font-face {
+  font-family: "BentonStrong";
+  src: url("Benton Sans/Benton Sans Bold.otf");
+}
+
+@font-face {
+  font-family: "BentonMedium";
+  src: url("Benton Sans/Benton Sans Medium.otf");
+}
+
+:root {
+  --bg: #ffffff;
+  --text: #000000;
+  --rule: #cccccc;
+  --accent: #c8102e;
+  --max: 880px;
+  --font-sans: "Benton", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --yellow: #ffcf01;
+  --red: #ed1c24;
+  --blue: #007194;
+  --both: #7a5a8c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-weight: normal;
+}
+
+#container {
+  max-width: var(--max);
+  margin: 10px auto 40px;
+  padding: 0 16px;
+}
+
+#title {
+  border-top: 2px solid #000;
+  padding-top: 6px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  line-height: 1.3;
+  font-family: "BentonStrong";
+}
+
+#subtitle {
+  font-family: "Benton";
+  font-size: 14px;
+  line-height: 19px;
+}
+
+.panel {
+  margin-top: 20px;
+}
+
+/* ---------------- Filter button groups (label above buttons) ---------------- */
+.filters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.filters-label {
+  font-family: "BentonStrong";
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.filter-btn {
+  font-family: "BentonMedium";
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 3px 10px;
+  border: 1px solid #000;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+}
+.filter-btn:hover { background: #f0f0f0; }
+.filter-btn.active { background: #000; color: #fff; }
+/* Party buttons use their party color for text and border; when selected, the color fills the button */
+.filter-btn.party-name.republican { border-color: var(--red); }
+.filter-btn.party-name.democratic { border-color: var(--blue); }
+.filter-btn.party-name.both { border-color: var(--both); }
+.filter-btn.party-name.republican.active { background: var(--red); border-color: var(--red); color: #fff; }
+.filter-btn.party-name.democratic.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.filter-btn.party-name.both.active { background: var(--both); border-color: var(--both); color: #fff; }
+
+/* ---------------- Toolbar ---------------- */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+#search {
+  font-family: "Benton";
+  font-size: 13px;
+  color: #000;
+  width: 260px;
+  max-width: 100%;
+  padding: 5px 8px 5px 28px;
+  border: 1px solid #000;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Ccircle cx='5.8' cy='5.8' r='4.6'/%3E%3Cline x1='9.2' y1='9.2' x2='13.2' y2='13.2'/%3E%3C/svg%3E") no-repeat 8px center;
+}
+.count { font-family: "BentonMedium"; font-size: 12px; }
+#search::placeholder { color: #000; opacity: 0.5; }
+#search:focus { outline: none; }
+
+mark { background: var(--yellow); color: #000; padding: 0; }
+
+/* ---------------- Table ---------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Benton";
+  font-size: 13px;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+
+th {
+  font-family: "BentonStrong";
+  font-size: 9px;             /* same as the SECTOR / TRANSPARENCY / PARTY labels */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  vertical-align: bottom;
+  border-bottom: 2px solid #000;
+}
+th[data-key] { cursor: pointer; user-select: none; } /* only the amount column sorts */
+th .arrow { display: inline-block; width: 10px; margin-left: 4px; }
+th .arrow:empty { display: none; } /* an empty arrow slot would wrap onto its own line and push the label up */
+th.num { text-align: left; }
+
+.num { text-align: left; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Contributions: party-colored amount with a proportional bar underneath */
+td.amount { min-width: 130px; }
+.bar-track { display: block; height: 12px; margin-top: 4px; }
+.bar { display: block; height: 100%; }
+td.amount.republican .bar { background: var(--red); }
+td.amount.democratic .bar { background: var(--blue); }
+td.amount.both .bar { background: var(--both); }
+
+td.donor { font-family: "BentonMedium"; }
+
+.party { white-space: nowrap; }
+.party-name { font-family: "BentonMedium"; }
+.party-name.republican { color: var(--red); }
+.party-name.democratic { color: var(--blue); }
+.party-name.both { color: var(--both); }
+
+.tag {
+  display: inline-block;
+  margin: 0 4px 4px 0;
+  padding: 2px 6px;
+  border: 1px solid #000;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+/* Expandable description row */
+tr.main { cursor: pointer; }
+tr.main:hover td { background: #f5f5f5; }
+tr.main.open td { border-bottom-color: transparent; }
+td.toggle { width: 24px; text-align: center; font-family: "BentonStrong"; }
+tr.desc td strong { font-family: "BentonStrong"; font-weight: normal; margin-right: 4px; }
+tr.desc td {
+  padding: 0 8px 14px 40px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+tr.desc[hidden] { display: none; }
+
+td.empty { text-align: center; padding: 20px 8px; }
+
+.status {
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.footnote {
+  margin-top: 14px;
+  font-size: 10px;
+}
+
+/* Phones: stack each donor as a card so nothing scrolls sideways */
+@media (max-width: 640px) {
+  .toolbar { flex-direction: column-reverse; align-items: stretch; gap: 8px; }
+  #search { width: 100%; }
+  thead { display: none; }
+  table, tbody { display: block; }
+  tbody { border-top: 2px solid #000; }
+  tr.main {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    column-gap: 8px;
+    padding: 10px 0 4px;
+  }
+  tr.main td { border: 0; padding: 0; }
+  tr.main td.toggle { grid-row: 1; grid-column: 1; }
+  tr.main td.donor { grid-row: 1; grid-column: 2; }
+  tr.main td.num { grid-row: 1; grid-column: 3; }
+  tr.main td.stack { grid-column: 2 / -1; font-size: 12px; padding-top: 4px; }
+  tr.main td.stack::before { content: attr(data-label) ": "; font-family: "BentonStrong"; }
+  tr.desc, tr.desc td { display: block; border-bottom: 1px solid var(--rule); }
+  tr.desc td { padding: 4px 0 12px 32px; }
+  tr.desc[hidden] { display: none; }
+  tr.main:not(.open) { border-bottom: 1px solid var(--rule); }
+}
+
+/* Government Contracts: a check mark when yes, an X when no */
+.check {
+  display: inline-block;
+  width: 6px;
+  height: 11px;
+  margin-left: 4px;
+  border: solid #000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* X for no: same 2px black stroke as the check mark */
+.cross {
+  display: inline-block;
+  position: relative;
+  width: 13px;
+  height: 13px;
+  margin-left: 1px;
+  vertical-align: -2px;
+}
+.cross::before,
+.cross::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  margin-left: -1px;
+  background: #000;
+}
+.cross::before { transform: rotate(45deg); }
+.cross::after { transform: rotate(-45deg); }
+
+/* ---------------- Draft banner, sticks to the top while scrolling (remove before publishing) ---------------- */
+.draft-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 6px 16px;
+  background: var(--red);
+  color: #fff;
+  font-family: "BentonStrong";
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
