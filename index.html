@@ -21,17 +21,22 @@
       <span class="filters-label" id="transparency-label">TRANSPARENCY</span>
       <div class="filter-buttons" id="transparency-filters" role="group" aria-labelledby="transparency-label"></div>
     </div>
-    <div class="filters">
-      <span class="filters-label" id="party-label">PARTY</span>
-      <div class="filter-buttons" id="party-filters" role="group" aria-labelledby="party-label"></div>
+    <div class="filters-row">
+      <div class="filters">
+        <span class="filters-label" id="party-label">PARTY</span>
+        <div class="filter-buttons" id="party-filters" role="group" aria-labelledby="party-label"></div>
+      </div>
+      <div class="filters">
+        <span class="filters-label" id="contracts-label">GOVERNMENT CONTRACTS</span>
+        <div class="filter-buttons" id="contracts-filters" role="group" aria-labelledby="contracts-label"></div>
+      </div>
     </div>
-    <div class="filters">
-      <span class="filters-label" id="contracts-label">GOVERNMENT CONTRACTS (NOT REAL DATA PLACEHOLDER)</span>
-      <div class="filter-buttons" id="contracts-filters" role="group" aria-labelledby="contracts-label"></div>
+    <div class="filters search-row">
+      <label class="filters-label" for="search">SEARCH</label>
+      <input type="search" id="search">
     </div>
     <div class="toolbar">
       <span class="count" id="count" aria-live="polite"></span>
-      <input type="search" id="search" placeholder="Search" aria-label="Search">
     </div>
     <div id="table-wrap"></div>
     <p class="footnote">Source placeholder</p>
@@ -138,7 +143,7 @@ function renderCell(r, col) {
   if (col.type === "check") {
     /* PLACEHOLDER: the CSV column is empty, so rows are randomly marked yes/no for now.
        Set CHECK_PLACEHOLDER to false to check only rows with a value in the CSV
-       (and remove " (NOT REAL DATA PLACEHOLDER)" from the GOVERNMENT CONTRACTS filter label). */
+       */
     const checked = hasContract(r);
     return `<td class="stack check-cell" data-label="${label}">${checked ? `<span class="check" role="img" aria-label="Yes"></span>` : `<span class="cross" role="img" aria-label="No"></span>`}</td>`;
   }
@@ -172,7 +177,11 @@ function render() {
       <tr class="desc"${open ? "" : " hidden"}><td colspan="${ncol}"><strong>Description</strong> ${highlight(r.Description, query)}</td></tr>`;
   }).join("") : `<tr><td class="empty" colspan="${ncol}">No match</td></tr>`;
 
-  document.getElementById("count").textContent = `Showing ${rows.length} of ${DATA.length} records`;
+  /* Total of the amounts in the rows currently shown */
+  const moneyCol = COLUMNS.find(c => c.type === "money");
+  const total = moneyCol ? rows.reduce((sum, r) => sum + cellValue(r, moneyCol), 0) : 0;
+  document.getElementById("count").innerHTML =
+    `Showing <strong>${rows.length}</strong> of <strong>${DATA.length}</strong> records, totaling <strong>${money(Math.round(total * 100) / 100)}</strong>`;
   document.getElementById("table-wrap").innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
 

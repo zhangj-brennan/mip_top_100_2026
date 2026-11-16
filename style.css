@@ -67,15 +67,25 @@ h1 {
   margin-top: 20px;
 }
 
-/* ---------------- Filter button groups (label above buttons) ---------------- */
+/* ---------------- Filter button groups (label to the left of the buttons) ---------------- */
 .filters {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
-  margin-bottom: 14px;
+  align-items: flex-start;   /* label lines up with the first row of buttons */
+  gap: 12px;
+  margin-bottom: 10px;
+}
+/* Two filter groups side by side (PARTY and GOVERNMENT CONTRACTS); stacks if there's no room */
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 12px;
 }
 .filters-label {
+  flex: none;
+  width: 120px;              /* same width for every label, so the button rows line up */
+  line-height: 1;            /* label's top lines up with the top edge of the buttons */
+  padding-top: 2px;
+  text-align: right;
   font-family: "BentonStrong";
   font-size: 9px;
   letter-spacing: 0.06em;
@@ -86,7 +96,7 @@ h1 {
   gap: 6px;
 }
 .filter-btn {
-  font-family: "BentonMedium";
+  font-family: "Benton";
   font-size: 12px;
   line-height: 1.2;
   padding: 3px 10px;
@@ -107,29 +117,31 @@ h1 {
 .filter-btn.party-name.both.active { background: var(--both); border-color: var(--both); color: #fff; }
 
 /* ---------------- Toolbar ---------------- */
+/* Record count: its own line, left-aligned, just above the table */
 .toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  justify-content: flex-start;
+  margin: 18px 0 6px;
 }
 
 #search {
   font-family: "Benton";
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.2;
   color: #000;
   width: 260px;
   max-width: 100%;
-  padding: 5px 8px 5px 28px;
+  height: calc(1.2em + 8px);   /* same as the filter buttons: line + 3px padding top/bottom + 1px borders */
+  padding: 3px 8px 3px 24px;
   border: 1px solid #000;
   border-radius: 0;
   -webkit-appearance: none;
   appearance: none;
   box-shadow: none;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Ccircle cx='5.8' cy='5.8' r='4.6'/%3E%3Cline x1='9.2' y1='9.2' x2='13.2' y2='13.2'/%3E%3C/svg%3E") no-repeat 8px center;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 14 14' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='5.8' cy='5.8' r='4.6'/%3E%3Cline x1='9.2' y1='9.2' x2='13.2' y2='13.2'/%3E%3C/svg%3E") no-repeat 8px center / 10px 10px;
 }
-.count { font-family: "BentonMedium"; font-size: 12px; }
+.count { font-family: "Benton"; font-size: 12px; }
+.count strong { font-family: "BentonStrong"; font-weight: normal; }
 #search::placeholder { color: #000; opacity: 0.5; }
 #search:focus { outline: none; }
 
@@ -167,21 +179,22 @@ th.num { text-align: left; }
 
 /* Contributions: amount in the donor's party color */
 
-td.donor { font-family: "BentonMedium"; }
+td.donor { font-family: "Benton"; }
 
 .party { white-space: nowrap; }
 .party-name { font-family: "BentonMedium"; }
 .party-name.republican { color: var(--red); }
 .party-name.democratic { color: var(--blue); }
 .party-name.both { color: var(--both); }
+td .party-name, .filter-btn.party-name { font-family: "Benton"; } /* table amounts and party buttons in regular weight */
 
 
 /* Expandable description row */
 tr.main { cursor: pointer; }
 tr.main:hover td { background: #f5f5f5; }
 tr.main.open td { border-bottom-color: transparent; }
-td.toggle { width: 24px; text-align: center; font-family: "BentonStrong"; }
-tr.desc td strong { font-family: "BentonStrong"; font-weight: normal; margin-right: 4px; }
+td.toggle { width: 24px; text-align: center; font-family: "Benton"; }
+tr.desc td strong { font-family: "Benton"; font-weight: normal; margin-right: 4px; }
 tr.desc td {
   padding: 0 8px 14px 40px;
   font-size: 13px;
@@ -204,8 +217,7 @@ td.empty { text-align: center; padding: 20px 8px; }
 
 /* Phones: stack each donor as a card so nothing scrolls sideways */
 @media (max-width: 640px) {
-  .toolbar { flex-direction: column-reverse; align-items: stretch; gap: 8px; }
-  #search { width: 100%; }
+  .search-row #search { flex: 1; width: auto; min-width: 0; }
   thead { display: none; }
   table, tbody { display: block; }
   tbody { border-top: 2px solid #000; }
@@ -220,7 +232,7 @@ td.empty { text-align: center; padding: 20px 8px; }
   tr.main td.donor { grid-row: 1; grid-column: 2; }
   tr.main td.num { grid-row: 1; grid-column: 3; }
   tr.main td.stack { grid-column: 2 / -1; font-size: 12px; padding-top: 4px; }
-  tr.main td.stack::before { content: attr(data-label) ": "; font-family: "BentonStrong"; }
+  tr.main td.stack::before { content: attr(data-label) ": "; font-family: "Benton"; }
   tr.desc, tr.desc td { display: block; border-bottom: 1px solid var(--rule); }
   tr.desc td { padding: 4px 0 12px 32px; }
   tr.desc[hidden] { display: none; }
@@ -267,7 +279,7 @@ td.empty { text-align: center; padding: 20px 8px; }
   top: 0;
   z-index: 10;
   padding: 6px 16px;
-  background: var(--red);
+  background: #6b6b6b;
   color: #fff;
   font-family: "BentonStrong";
   font-size: 11px;
