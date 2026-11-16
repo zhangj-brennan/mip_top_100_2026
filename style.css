@@ -165,13 +165,7 @@ th.num { text-align: left; }
 
 .num { text-align: left; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* Contributions: party-colored amount with a proportional bar underneath */
-td.amount { min-width: 130px; }
-.bar-track { display: block; height: 12px; margin-top: 4px; }
-.bar { display: block; height: 100%; }
-td.amount.republican .bar { background: var(--red); }
-td.amount.democratic .bar { background: var(--blue); }
-td.amount.both .bar { background: var(--both); }
+/* Contributions: amount in the donor's party color */
 
 td.donor { font-family: "BentonMedium"; }
 
@@ -181,14 +175,6 @@ td.donor { font-family: "BentonMedium"; }
 .party-name.democratic { color: var(--blue); }
 .party-name.both { color: var(--both); }
 
-.tag {
-  display: inline-block;
-  margin: 0 4px 4px 0;
-  padding: 2px 6px;
-  border: 1px solid #000;
-  font-size: 11px;
-  line-height: 1.3;
-}
 
 /* Expandable description row */
 tr.main { cursor: pointer; }

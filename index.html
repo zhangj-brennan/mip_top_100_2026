@@ -79,7 +79,7 @@ function highlight(text, q) {
 const partyClass = v => /repub/i.test(v) ? "republican" : /democ/i.test(v) ? "democratic" : "both";
 
 /* ---------- State ---------- */
-let DATA = [], COLUMNS = [], MAX_AMOUNT = 0;
+let DATA = [], COLUMNS = [];
 let sortKey = null, sortDir = 1, query = "";
 const openRows = new Set();
 
@@ -125,12 +125,12 @@ function cellValue(r, col) {
 function renderCell(r, col) {
   const label = esc(col.label);
   if (col.type === "money") {
-    /* Amount in the donor's party color, with a bar scaled to the largest amount in the CSV */
-    const n = cellValue(r, col), pct = MAX_AMOUNT ? (n / MAX_AMOUNT) * 100 : 0;
+    /* Amount in the donor's party color */
+    const n = cellValue(r, col);
     const cls = partyClass(r["Party Supported"] || "");
-    return `<td class="num amount ${cls}"><span class="party-name ${cls}">${money(n)}</span><span class="bar-track"><span class="bar" style="width:${pct.toFixed(2)}%"></span></span></td>`;
+    return `<td class="num amount ${cls}"><span class="party-name ${cls}">${money(n)}</span></td>`;
   }
-  if (col.type === "tags") return `<td class="stack" data-label="${label}">${r.__sectors.map(t => `<span class="tag">${highlight(t, query)}</span>`).join("")}</td>`;
+  if (col.type === "tags") return `<td class="stack" data-label="${label}">${r.__sectors.map(t => highlight(t, query)).join(", ")}</td>`;
   if (col.type === "party") {
     const v = r[col.key], cls = partyClass(v);
     return `<td class="stack party" data-label="${label}"><span class="party-name ${cls}">${highlight(v, query)}</span></td>`;
@@ -242,13 +242,7 @@ fetch(encodeURI(CSV_FILE), { cache: "no-cache" })
     if (CHECK_PLACEHOLDER) assignPlaceholderContracts(DATA);
     COLUMNS = buildColumns(Object.keys(DATA[0] || {}).filter(k => !k.startsWith("__")), DATA); /* "__" fields are internal, not CSV columns */
     const moneyCol = COLUMNS.find(c => c.type === "money");
-    MAX_AMOUNT = moneyCol ? Math.max(0, ...DATA.map(r => cellValue(r, moneyCol))) : 0;
     if (moneyCol) { sortKey = moneyCol.key; sortDir = -1; } /* open sorted by amount, most to least */
-    /* Open the description of the first donor shown (the largest amount) */
-    const first = moneyCol
-      ? DATA.reduce((best, r) => cellValue(r, moneyCol) > cellValue(best, moneyCol) ? r : best, DATA[0])
-      : DATA[0];
-    if (first) openRows.add(DATA.indexOf(first));
     renderFilters();
     render();
   })
